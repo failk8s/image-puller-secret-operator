@@ -1,0 +1,11 @@
+apiVersion: skaffold/v2beta5
+kind: Config
+metadata:
+  name: image-puller-secret-operator
+build:
+  artifacts:
+  - image: registry.test.eduk8s.io/image-puller-secret-operator
+deploy:
+  kubectl:
+    manifests:
+    - k8s.yaml
