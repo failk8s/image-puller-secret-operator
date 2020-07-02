@@ -2,7 +2,7 @@
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: secret-copier-acc
+  name: pull-secret-copier
 imagePullSecrets:
   - name: registry-creds
 
@@ -10,7 +10,7 @@ imagePullSecrets:
 apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRole
 metadata:
-  name: secret-copier
+  name: pull-secret-copier
 rules:
 - apiGroups: [""]
   resources: ["namespaces"]
@@ -18,52 +18,60 @@ rules:
 - apiGroups: [""]
   resources: ["secrets"]
   verbs: ["*"]
+- apiGroups: [""]
+  resources: ["serviceaccounts"]
+  verbs: ["*"]
 
 ---
 apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRoleBinding
 metadata:
-  name: secret-copier
+  name: pull-secret-copier
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
   name: secret-copier
 subjects:
   - kind: ServiceAccount
-    name: secret-copier-acc
+    name: pull-secret-copier
     namespace: tanzu-developer
 ---
 apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRoleBinding
 metadata:
-  name: secret-copier-privileged
+  name: pull-secret-copier-privileged
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
   name: vmware-system-tmc-psp-privileged
 subjects:
   - kind: ServiceAccount
-    name: secret-copier-acc
+    name: pull-secret-copier
     namespace: tanzu-developer
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: shell-operator
+  name: pull-secret-copier
   labels:
-    app: shell-operator
+    app: pull-secret-copier
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: shell-operator
+      app: pull-secret-copier
   template:
     metadata:
       labels:
-        app: shell-operator
+        app: pull-secret-copier
     spec:
       containers:
-      - name: shell-operator
+      - name: pull-secret-copier
         image: registry.test.eduk8s.io/image-puller-secret-operator:latest
-        imagePullPolicy: Always
-      serviceAccountName: secret-copier-acc
+        env:
+        - name: MAIN_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        imagePullPolicy: IfNotPresent
+      serviceAccountName: pull-secret-copier

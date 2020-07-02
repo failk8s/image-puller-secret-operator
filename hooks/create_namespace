@@ -28,15 +28,20 @@ hook::trigger() {
     exit 0
   fi
 
-
-  for namespace in $(jq -r '.[] | .object.metadata | select(.name == "tanzu-developer" | not ) | .name' $BINDING_CONTEXT_PATH);
+  for namespace in $(jq -r ".[] | .object.metadata | select(.name == \"${MAIN_NAMESPACE}\" | not ) | .name" $BINDING_CONTEXT_PATH);
   do
-    for secret in $(kubectl -n tanzu-developer get secret -l secret-copier=yes -o name);
+    # Copy all the secrets with a label of pull-secret
+    for secret in $(kubectl -n ${MAIN_NAMESPACE} get secret -l pull-secret="yes" -o jsonpath="{.items[*].metadata.name}");
     do
-      kubectl -n tanzu-developer get $secret -o json | \
+      # Copy secret
+      kubectl -n ${MAIN_NAMESPACE} get secret/$secret -o json | \
         jq -r ".metadata.namespace=\"${namespace}\" |
                 .metadata |= with_entries(select([.key] | inside([\"name\", \"namespace\", \"labels\"])))" \
         | kubectl::replace_or_create
+      # Update default service account to add the secret as imagePullSecrets
+      kubectl -n ${namespace} get serviceaccount default -o json \
+        | jq -r ".imagePullSecrets |= . + [{\"name\": \"$secret\"}]" \
+        | kubectl::apply
     done
   done
 }
