@@ -6,3 +6,10 @@ The source secrets labeled `pull-secret: yes` are copied from the namespace defi
 
 * after a secret with the label `pull-secret: yes` is created or changed in the namespace defined as `MAIN_NAMESPACE` in the controller deployment
 * after a new namespace is created
+
+
+Image does exist in:
+
+```
+quay.io/jorgemoralespou/image-puller-secret-operator:latest
+```
