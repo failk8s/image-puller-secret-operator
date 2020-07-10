@@ -19,5 +19,5 @@ function kubectl::replace_or_create() {
 function kubectl::apply() {
   object=$(cat)
 
-  kubectl apply -f - <<< "$object" >/dev/null
+  kubectl apply --force -f - <<< "$object" >/dev/null
 }
